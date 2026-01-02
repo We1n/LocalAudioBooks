@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { AppProvider, useApp } from './ui';
+import { AppProvider, useApp, OfflineIndicator } from './ui';
 import { LibraryScreen } from './ui/screens/LibraryScreen';
 import { PlayerScreen } from './ui/screens/PlayerScreen';
 import { CarModeScreen } from './ui/screens/CarModeScreen';
@@ -57,6 +57,7 @@ function AppContent() {
 function App() {
   return (
     <AppProvider>
+      <OfflineIndicator />
       <AppContent />
     </AppProvider>
   );
