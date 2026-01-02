@@ -372,6 +372,13 @@ class Player {
   }
 
   /**
+   * Принудительно сохраняет текущую позицию (публичный метод)
+   */
+  async saveProgress(): Promise<void> {
+    await this.saveCurrentPosition();
+  }
+
+  /**
    * Запускает автосохранение позиции
    */
   private startAutoSave(): void {
@@ -475,4 +482,8 @@ export function onStateChange(callback: PlayerStateCallback): () => void {
 
 export function destroy(): void {
   playerInstance.destroy();
+}
+
+export async function saveProgress(): Promise<void> {
+  return playerInstance.saveProgress();
 }
