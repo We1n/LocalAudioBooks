@@ -8,4 +8,5 @@ export { Card } from './components/Card';
 export { Input } from './components/Input';
 export { LibraryScreen } from './screens/LibraryScreen';
 export { PlayerScreen } from './screens/PlayerScreen';
+export { CarModeScreen } from './screens/CarModeScreen';
 export { SettingsScreen } from './screens/SettingsScreen';
