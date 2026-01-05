@@ -4,7 +4,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef } from 'react';
 import type { Book, Settings, Progress } from '../storage';
-import { loadAllBooks, loadSettings, saveSettings as saveSettingsToStorage, loadProgress } from '../storage';
+import { loadAllBooks, loadSettings, saveSettings as saveSettingsToStorage, loadProgress, clearLibrary as clearLibraryStorage } from '../storage';
 import { getState, onStateChange, loadBook, type PlayerState } from '../player';
 import { requestFolderAccess, scanFolder } from '../library';
 
@@ -35,6 +35,9 @@ interface AppContextValue {
   
   // Прогресс
   getBookProgress: (bookId: string) => Promise<Progress | null>;
+  
+  // Управление библиотекой
+  clearLibrary: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextValue | undefined>(undefined);
@@ -223,6 +226,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
   
+  // Очистка библиотеки (книги, прогресс, папки)
+  const clearLibrary = useCallback(async () => {
+    try {
+      await clearLibraryStorage();
+      // Очищаем состояние
+      setBooks([]);
+      setCurrentBook(null);
+      // Обновляем список книг
+      await refreshBooks();
+    } catch (error) {
+      console.error('Ошибка очистки библиотеки:', error);
+      throw error;
+    }
+  }, [refreshBooks]);
+  
   const value: AppContextValue = {
     currentScreen,
     setCurrentScreen,
@@ -237,6 +255,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     settings,
     updateSettings,
     getBookProgress,
+    clearLibrary,
   };
   
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

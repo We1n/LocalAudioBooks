@@ -7,7 +7,7 @@ import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 
 export function SettingsScreen() {
-  const { settings, updateSettings, setCurrentScreen } = useApp();
+  const { settings, updateSettings, setCurrentScreen, clearLibrary } = useApp();
   
   if (!settings) {
     return (
@@ -25,6 +25,20 @@ export function SettingsScreen() {
   
   const handleSpeedChange = async (speed: number) => {
     await updateSettings({ playbackSpeed: speed });
+  };
+  
+  const handleClearLibrary = async () => {
+    if (!confirm('Вы уверены, что хотите очистить всю библиотеку? Это удалит все книги, прогресс прослушивания и выбранные папки. Настройки и статистика сохранятся.')) {
+      return;
+    }
+    
+    try {
+      await clearLibrary();
+      alert('Библиотека успешно очищена');
+    } catch (error) {
+      console.error('Ошибка очистки библиотеки:', error);
+      alert(`Ошибка очистки библиотеки: ${error instanceof Error ? error.message : String(error)}`);
+    }
   };
   
   return (
@@ -101,6 +115,23 @@ export function SettingsScreen() {
                 </Button>
               ))}
             </div>
+          </div>
+          
+          {/* Очистка библиотеки */}
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              Управление библиотекой
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+              Очистить всю библиотеку (книги, прогресс, папки). Настройки и статистика сохранятся.
+            </p>
+            <Button
+              variant="secondary"
+              onClick={handleClearLibrary}
+              className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white"
+            >
+              🗑️ Очистить библиотеку
+            </Button>
           </div>
           
         </Card>

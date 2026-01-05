@@ -534,6 +534,31 @@ export async function getYearlyStats(year: number): Promise<{ totalSeconds: numb
 }
 
 /**
+ * Очищает библиотеку (книги, прогресс, папки), но сохраняет настройки и статистику
+ */
+export async function clearLibrary(): Promise<void> {
+  try {
+    const db = await database.getDB();
+    const stores = [STORE_BOOKS, STORE_PROGRESS, STORE_FOLDERS];
+    
+    await Promise.all(
+      stores.map(
+        (storeName) =>
+          new Promise<void>((resolve, reject) => {
+            const transaction = db.transaction([storeName], 'readwrite');
+            const store = transaction.objectStore(storeName);
+            const request = store.clear();
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(new StorageError(`Не удалось очистить ${storeName}: ${request.error?.message}`));
+          })
+      )
+    );
+  } catch (error) {
+    throw new StorageError(`Ошибка при очистке библиотеки: ${error instanceof Error ? error.message : String(error)}`, error instanceof Error ? error : undefined);
+  }
+}
+
+/**
  * Очищает все данные из базы данных (для тестирования)
  */
 export async function clearAll(): Promise<void> {
