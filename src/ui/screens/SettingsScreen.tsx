@@ -2,7 +2,6 @@
  * Экран настроек - управление настройками приложения
  */
 
-import React from 'react';
 import { useApp } from '../AppContext';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';

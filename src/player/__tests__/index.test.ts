@@ -18,7 +18,6 @@ import {
   getCurrentBook,
   onStateChange,
   destroy,
-  type PlayerState,
 } from '../index';
 import { Book } from '../../storage';
 import { saveBook, saveProgress, saveSettings, loadSettings, clearAll } from '../../storage';
@@ -204,7 +203,7 @@ describe('Player Module', () => {
 
       // Мокаем ошибку загрузки
       const eventHandlers: Record<string, Function[]> = {};
-      (Howl as jest.Mock).mockImplementation((options: any) => {
+      (Howl as jest.Mock).mockImplementation(() => {
         mockHowlInstance.state = jest.fn(() => 'unloaded');
         mockHowlInstance.once = jest.fn((event: string, handler: Function) => {
           if (!eventHandlers[event]) {

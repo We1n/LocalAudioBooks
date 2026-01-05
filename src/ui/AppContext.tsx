@@ -2,7 +2,7 @@
  * React Context для глобального состояния приложения
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef } from 'react';
 import type { Book, Settings, Progress } from '../storage';
 import { loadAllBooks, loadSettings, saveSettings as saveSettingsToStorage, loadProgress } from '../storage';
 import { getState, onStateChange, loadBook, type PlayerState } from '../player';
@@ -121,7 +121,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [refreshBooks]);
   
   // Вспомогательная функция для выбора файла (временное решение для MVP)
-  const selectFileForBook = useCallback((book: Book): Promise<File | null> => {
+  const selectFileForBook = useCallback((_book: Book): Promise<File | null> => {
     return new Promise((resolve) => {
       const input = document.createElement('input');
       input.type = 'file';

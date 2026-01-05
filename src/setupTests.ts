@@ -1,7 +1,8 @@
 import '@testing-library/jest-dom';
 
 // Полифилл для structuredClone (нужен для fake-indexeddb)
-import structuredClonePolyfill from '@ungap/structured-clone';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const structuredClonePolyfill = require('@ungap/structured-clone');
 if (typeof global.structuredClone === 'undefined') {
   (global as any).structuredClone = structuredClonePolyfill;
 }

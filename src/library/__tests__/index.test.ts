@@ -4,18 +4,15 @@
 
 import {
   requestFolderAccess,
-  scanFolder,
   getAllBooks,
   getBook,
   removeBook,
 } from '../index';
 import {
   saveBook,
-  loadAllBooks,
   clearAll,
   type Book,
 } from '../../storage';
-import { createFileId, normalizePath } from '../../utils';
 
 // Моки для File System Access API
 class MockFileSystemFileHandle implements FileSystemFileHandle {

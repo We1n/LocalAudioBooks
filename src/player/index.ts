@@ -10,7 +10,7 @@
 
 import { Howl, Howler } from 'howler';
 import type { Book } from '../storage';
-import { loadProgress, saveProgress, loadSettings, saveSettings, saveDailyStats } from '../storage';
+import { loadProgress, saveProgress as saveProgressToStorage, loadSettings, saveSettings, saveDailyStats } from '../storage';
 import { PlaybackError } from '../utils';
 
 // Интерфейс для события изменения состояния плеера
@@ -35,7 +35,6 @@ class Player {
   private autoSaveInterval: number | null = null;
   private readonly AUTO_SAVE_INTERVAL_MS = 5000; // 5 секунд
   private statsInterval: number | null = null;
-  private readonly STATS_SAVE_INTERVAL_MS = 30000; // 30 секунд
   private accumulatedSeconds: number = 0;
   private lastPosition: number = 0;
   private lastStatsSaveTime: number = 0;
@@ -133,9 +132,6 @@ class Player {
         onseek: () => {
           this.notifyStateChange();
         },
-        onerror: (id, error) => {
-          throw new PlaybackError(`Ошибка воспроизведения: ${error}`);
-        },
       });
 
       this.currentBookId = book.id;
@@ -152,7 +148,7 @@ class Player {
           resolve();
         } else {
           this.howl.once('load', () => resolve());
-          this.howl.once('loaderror', (id, error) => {
+          this.howl.once('loaderror', (_id, error) => {
             reject(new PlaybackError(`Ошибка загрузки: ${error}`));
           });
         }
@@ -396,7 +392,7 @@ class Player {
 
     try {
       const position = this.getCurrentPosition();
-      await saveProgress(this.currentBookId, position);
+      await saveProgressToStorage(this.currentBookId, position);
     } catch (error) {
       console.error('Ошибка при сохранении прогресса:', error);
     }

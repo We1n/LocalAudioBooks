@@ -12,7 +12,6 @@ import {
   loadSelectedFolders,
   clearAll,
   Book,
-  Settings,
 } from '../index';
 import { StorageError } from '../../utils';
 
