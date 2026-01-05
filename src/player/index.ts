@@ -84,14 +84,44 @@ class Player {
       const settings = await loadSettings();
       const savedProgress = await loadProgress(book.id);
 
+      // Promise для ожидания загрузки с таймаутом
+      let loadResolve: (() => void) | null = null;
+      let loadReject: ((error: Error) => void) | null = null;
+      let loadTimeout: NodeJS.Timeout | null = null;
+      
+      const loadPromise = new Promise<void>((resolve, reject) => {
+        loadResolve = () => {
+          if (loadTimeout) {
+            clearTimeout(loadTimeout);
+            loadTimeout = null;
+          }
+          resolve();
+        };
+        loadReject = (error: Error) => {
+          if (loadTimeout) {
+            clearTimeout(loadTimeout);
+            loadTimeout = null;
+          }
+          reject(error);
+        };
+      });
+
       // Создаём новый Howl экземпляр
+      // Определяем формат из MIME типа файла
+      const format = file.type === 'audio/mpeg' ? 'mp3' : 
+                     file.type === 'audio/mp4' || file.type === 'audio/m4a' ? 'm4a' :
+                     file.type === 'audio/wav' ? 'wav' :
+                     file.type === 'audio/ogg' ? 'ogg' : 'mp3';
+      
       this.howl = new Howl({
         src: [blobUrl],
-        html5: true, // Используем HTML5 Audio API для лучшей поддержки
+        format: [format], // Явно указываем формат
+        html5: false, // Используем Web Audio API для лучшей поддержки форматов
         preload: true,
         volume: 1.0, // Начальная громкость (будет установлена из настроек)
         rate: settings.playbackSpeed,
         onload: () => {
+          console.log('Howl onload callback вызван');
           // После загрузки устанавливаем позицию из сохранённого прогресса
           if (savedProgress !== null && savedProgress > 0 && this.howl) {
             this.howl.seek(savedProgress);
@@ -102,6 +132,16 @@ class Player {
             this.howl.rate(settings.playbackSpeed);
           }
           this.notifyStateChange();
+          // Разрешаем Promise загрузки
+          if (loadResolve) {
+            loadResolve();
+          }
+        },
+        onloaderror: (_id, error) => {
+          console.error('Howl onloaderror callback вызван:', error);
+          if (loadReject) {
+            loadReject(new PlaybackError(`Ошибка загрузки: ${error}`));
+          }
         },
         onplay: () => {
           this.startAutoSave();
@@ -141,41 +181,35 @@ class Player {
       this.currentBook = book;
 
       console.log('Ожидание загрузки аудио файла...');
+      console.log('Состояние Howl при создании:', this.howl.state());
       
-      // Ожидаем загрузки с таймаутом
-      await new Promise<void>((resolve, reject) => {
-        if (!this.howl) {
-          reject(new PlaybackError('Howl не инициализирован'));
-          return;
-        }
-
-        // Таймаут на 10 секунд
-        const timeout = setTimeout(() => {
-          reject(new PlaybackError('Таймаут загрузки аудио файла (10 секунд)'));
+      // Проверяем, не загружен ли уже файл
+      if (this.howl.state() === 'loaded') {
+        console.log('Аудио файл уже загружен');
+      } else {
+        // Явно вызываем load() для начала загрузки
+        console.log('Вызываем load() для начала загрузки...');
+        this.howl.load();
+        
+        // Устанавливаем таймаут
+        loadTimeout = setTimeout(() => {
+          console.error('Таймаут загрузки. Текущее состояние:', this.howl?.state());
+          if (loadReject) {
+            loadReject(new PlaybackError('Таймаут загрузки аудио файла (10 секунд)'));
+          }
         }, 10000);
 
-        const cleanup = () => {
-          clearTimeout(timeout);
-        };
-
-        if (this.howl.state() === 'loaded') {
-          console.log('Аудио файл уже загружен');
-          cleanup();
-          resolve();
-        } else {
-          console.log('Состояние Howl:', this.howl.state(), 'Ожидаем события load...');
-          this.howl.once('load', () => {
-            console.log('Аудио файл успешно загружен');
-            cleanup();
-            resolve();
-          });
-          this.howl.once('loaderror', (_id, error) => {
-            console.error('Ошибка загрузки аудио файла:', error);
-            cleanup();
-            reject(new PlaybackError(`Ошибка загрузки: ${error}`));
-          });
+        try {
+          await loadPromise;
+          console.log('Promise загрузки разрешен');
+        } catch (error) {
+          if (loadTimeout) {
+            clearTimeout(loadTimeout);
+            loadTimeout = null;
+          }
+          throw error;
         }
-      });
+      }
       
       console.log('Загрузка завершена, устанавливаем начальную позицию');
 

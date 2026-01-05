@@ -11,7 +11,7 @@ import { formatTime } from '../../utils';
 import type { Book } from '../../storage';
 
 export function LibraryScreen() {
-  const { books, isLoadingBooks, addFolder, openBook, getBookProgress, setCurrentScreen } = useApp();
+  const { books, isLoadingBooks, addFolder, openBook, getBookProgress } = useApp();
   const [searchQuery, setSearchQuery] = useState('');
   const [bookProgresses, setBookProgresses] = useState<Map<string, number>>(new Map());
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -99,7 +99,7 @@ export function LibraryScreen() {
   };
   
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 pb-20">
       <div className="container mx-auto px-4">
         {/* Toast уведомление */}
         {toastMessage && (
@@ -113,9 +113,6 @@ export function LibraryScreen() {
             Библиотека
           </h1>
           <div className="flex gap-2">
-            <Button variant="secondary" onClick={() => setCurrentScreen('settings')}>
-              ⚙️ Настройки
-            </Button>
             <Button onClick={handleAddFolder} disabled={isLoadingBooks}>
               {isLoadingBooks ? 'Сканирование...' : '+ Добавить папку'}
             </Button>

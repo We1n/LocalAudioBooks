@@ -35,6 +35,11 @@ export interface ScanProgress {
 
 export type ScanProgressCallback = (progress: ScanProgress) => void;
 
+export type BookHandlePair = {
+  bookId: string;
+  handle: FileSystemFileHandle;
+};
+
 /**
  * Запрашивает доступ к папке через File System Access API
  * Если API не поддерживается, использует fallback через input[webkitdirectory]
@@ -315,11 +320,13 @@ async function isBookDuplicate(filePath: string): Promise<boolean> {
  * Сканирует папку и добавляет найденные аудиокниги в библиотеку
  * @param folderHandle - handle папки для сканирования
  * @param onProgress - опциональный callback для отслеживания прогресса
+ * @param onBookFound - опциональный callback для сохранения handle книги
  * @returns количество добавленных книг
  */
 export async function scanFolder(
   folderHandle: FileSystemDirectoryHandle,
-  onProgress?: ScanProgressCallback
+  onProgress?: ScanProgressCallback,
+  onBookFound?: (bookId: string, handle: FileSystemFileHandle) => void
 ): Promise<number> {
   try {
     // Сканируем директорию рекурсивно
@@ -370,6 +377,12 @@ export async function scanFolder(
 
         // Сохраняем в storage
         await saveBook(book);
+        
+        // Сохраняем handle для быстрого доступа
+        if (onBookFound) {
+          onBookFound(book.id, handle);
+        }
+        
         addedCount++;
       } catch (error) {
         // Пропускаем файл при ошибке, но продолжаем обработку остальных

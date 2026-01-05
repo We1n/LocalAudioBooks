@@ -3,14 +3,11 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useApp } from '../AppContext';
-import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { getYearlyStats } from '../../storage';
 import { formatTime } from '../../utils';
 
 export function StatisticsScreen() {
-  const { setCurrentScreen } = useApp();
   const [yearlyStats, setYearlyStats] = useState<{ totalSeconds: number; booksCount: number } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -41,18 +38,8 @@ export function StatisticsScreen() {
   };
   
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 pb-20">
       <div className="container mx-auto px-4 max-w-2xl">
-        <div className="mb-6">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setCurrentScreen('library')}
-          >
-            ← Назад
-          </Button>
-        </div>
-        
         <Card className="p-6 space-y-6">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
             Статистика прослушивания

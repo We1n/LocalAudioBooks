@@ -8,7 +8,7 @@ import { loadAllBooks, loadSettings, saveSettings as saveSettingsToStorage, load
 import { getState, onStateChange, loadBook, type PlayerState } from '../player';
 import { requestFolderAccess, scanFolder } from '../library';
 
-export type Screen = 'library' | 'player' | 'settings' | 'statistics';
+export type Screen = 'home' | 'search' | 'player' | 'library' | 'profile' | 'settings' | 'statistics';
 
 interface AppContextValue {
   // Экраны и навигация
@@ -105,9 +105,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
       
       setIsLoadingBooks(true);
-      await scanFolder(folderHandle, (progress) => {
-        console.log('Прогресс сканирования:', progress);
-      });
+      await scanFolder(
+        folderHandle, 
+        (progress) => {
+          console.log('Прогресс сканирования:', progress);
+        },
+        (bookId, handle) => {
+          // Сохраняем handle при сканировании, чтобы не запрашивать файл повторно
+          bookHandlesRef.current.set(bookId, handle);
+          console.log('Handle сохранен для книги:', bookId);
+        }
+      );
       await refreshBooks();
     } catch (error) {
       console.error('Ошибка добавления папки:', error);

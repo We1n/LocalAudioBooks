@@ -42,18 +42,8 @@ export function SettingsScreen() {
   };
   
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 pb-20">
       <div className="container mx-auto px-4 max-w-2xl">
-        <div className="mb-6">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setCurrentScreen('library')}
-          >
-            ← Назад
-          </Button>
-        </div>
-        
         <Card className="p-6 space-y-6">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
             Настройки

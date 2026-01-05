@@ -1,5 +1,5 @@
 import { useEffect, lazy, Suspense } from 'react';
-import { AppProvider, useApp, OfflineIndicator } from './ui';
+import { AppProvider, useApp, OfflineIndicator, BottomNavigation } from './ui';
 import { saveProgress as savePlayerProgress } from './player';
 
 // Ленивая загрузка экранов для оптимизации производительности
@@ -39,38 +39,22 @@ function AppContent() {
     };
   }, []);
   
-  switch (currentScreen) {
-    case 'library':
-      return (
+  return (
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1 pb-16">
         <Suspense fallback={<LoadingScreen />}>
-          <LibraryScreen />
+          {currentScreen === 'library' && <LibraryScreen />}
+          {currentScreen === 'player' && <PlayerScreen />}
+          {currentScreen === 'profile' && <SettingsScreen />}
+          {currentScreen === 'settings' && <SettingsScreen />}
+          {currentScreen === 'statistics' && <StatisticsScreen />}
+          {/* home и search перенаправляются на library */}
+          {(currentScreen === 'home' || currentScreen === 'search') && <LibraryScreen />}
         </Suspense>
-      );
-    case 'player':
-      return (
-        <Suspense fallback={<LoadingScreen />}>
-          <PlayerScreen />
-        </Suspense>
-      );
-    case 'settings':
-      return (
-        <Suspense fallback={<LoadingScreen />}>
-          <SettingsScreen />
-        </Suspense>
-      );
-    case 'statistics':
-      return (
-        <Suspense fallback={<LoadingScreen />}>
-          <StatisticsScreen />
-        </Suspense>
-      );
-    default:
-      return (
-        <Suspense fallback={<LoadingScreen />}>
-          <LibraryScreen />
-        </Suspense>
-      );
-  }
+      </div>
+      <BottomNavigation />
+    </div>
+  );
 }
 
 // Компонент загрузки

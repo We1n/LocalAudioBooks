@@ -75,7 +75,7 @@ function useSwipeGesture(
 }
 
 export function PlayerScreen() {
-  const { currentBook, playerState, settings, setCurrentScreen, updateSettings } = useApp();
+  const { currentBook, playerState, settings, updateSettings } = useApp();
   const [currentPosition, setCurrentPosition] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -107,7 +107,6 @@ export function PlayerScreen() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400 mb-4">Загрузка книги...</p>
-          <Button onClick={() => setCurrentScreen('library')}>Вернуться в библиотеку</Button>
         </div>
       </div>
     );
@@ -166,27 +165,10 @@ export function PlayerScreen() {
   
   return (
     <div 
-      className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8"
+      className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 pb-20"
       {...swipeHandlers}
     >
       <div className="container mx-auto px-4 max-w-2xl">
-        <div className="mb-6 flex justify-between">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setCurrentScreen('library')}
-          >
-            ← Назад в библиотеку
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setCurrentScreen('settings')}
-          >
-            ⚙️ Настройки
-          </Button>
-        </div>
-        
         <Card className="p-6">
           {/* Обложка и информация */}
           <div className="text-center mb-6">
@@ -256,42 +238,26 @@ export function PlayerScreen() {
             </button>
           </div>
           
-          {/* Кнопки перемотки - крупные и контрастные */}
+          {/* Кнопки перемотки - две крупные кнопки */}
           <div className="mb-6">
-            <div className="flex justify-center gap-3 mb-3">
-              {([15, 30, 60] as const).map((seconds) => (
-                <button
-                  key={`back-${seconds}`}
-                  onClick={() => handleButtonClick(() => skipBackward(seconds))}
-                  className="px-6 py-4 bg-gray-800 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 active:bg-gray-600 dark:active:bg-gray-500 text-white text-lg font-bold rounded-lg min-w-[100px] min-h-[60px] transition-colors focus:outline-none focus:ring-4 focus:ring-gray-500 shadow-lg"
-                >
-                  ← {seconds} сек
-                </button>
-              ))}
-            </div>
-            <div className="flex justify-center gap-3 mb-3">
-              {([15, 30, 60] as const).map((seconds) => (
-                <button
-                  key={`forward-${seconds}`}
-                  onClick={() => handleButtonClick(() => skipForward(seconds))}
-                  className="px-6 py-4 bg-gray-800 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 active:bg-gray-600 dark:active:bg-gray-500 text-white text-lg font-bold rounded-lg min-w-[100px] min-h-[60px] transition-colors focus:outline-none focus:ring-4 focus:ring-gray-500 shadow-lg"
-                >
-                  {seconds} сек →
-                </button>
-              ))}
+            <div className="flex justify-center gap-4 mb-3">
+              <button
+                onClick={() => handleButtonClick(() => skipBackward(skipInterval))}
+                className="px-8 py-6 bg-gray-800 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 active:bg-gray-600 dark:active:bg-gray-500 text-white text-xl font-bold rounded-lg min-w-[140px] min-h-[70px] transition-colors focus:outline-none focus:ring-4 focus:ring-gray-500 shadow-lg"
+              >
+                ← {skipInterval} сек
+              </button>
+              <button
+                onClick={() => handleButtonClick(() => skipForward(skipInterval))}
+                className="px-8 py-6 bg-gray-800 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 active:bg-gray-600 dark:active:bg-gray-500 text-white text-xl font-bold rounded-lg min-w-[140px] min-h-[70px] transition-colors focus:outline-none focus:ring-4 focus:ring-gray-500 shadow-lg"
+              >
+                {skipInterval} сек →
+              </button>
             </div>
             <div className="text-center mt-3">
-              <button
-                onClick={() => {
-                  const intervals: Array<15 | 30 | 60> = [15, 30, 60];
-                  const currentIndex = intervals.indexOf(skipInterval);
-                  const nextIndex = (currentIndex + 1) % intervals.length;
-                  updateSettings({ preferredSkipInterval: intervals[nextIndex] });
-                }}
-                className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                Текущий интервал: {skipInterval} сек (нажмите для смены)
-              </button>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Интервал перемотки: {skipInterval} сек (настройка в Настройках)
+              </p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                 Свайп влево/вправо для перемотки
               </p>
