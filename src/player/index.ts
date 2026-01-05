@@ -74,8 +74,11 @@ class Player {
         file = await fileHandle.getFile();
       }
 
+      console.log('Файл получен:', file.name, 'Размер:', file.size, 'Тип:', file.type);
+
       // Создаём blob URL для Howler.js
       const blobUrl = URL.createObjectURL(file);
+      console.log('Blob URL создан:', blobUrl);
 
       // Загружаем настройки
       const settings = await loadSettings();
@@ -137,22 +140,44 @@ class Player {
       this.currentBookId = book.id;
       this.currentBook = book;
 
-      // Ожидаем загрузки
+      console.log('Ожидание загрузки аудио файла...');
+      
+      // Ожидаем загрузки с таймаутом
       await new Promise<void>((resolve, reject) => {
         if (!this.howl) {
           reject(new PlaybackError('Howl не инициализирован'));
           return;
         }
 
+        // Таймаут на 10 секунд
+        const timeout = setTimeout(() => {
+          reject(new PlaybackError('Таймаут загрузки аудио файла (10 секунд)'));
+        }, 10000);
+
+        const cleanup = () => {
+          clearTimeout(timeout);
+        };
+
         if (this.howl.state() === 'loaded') {
+          console.log('Аудио файл уже загружен');
+          cleanup();
           resolve();
         } else {
-          this.howl.once('load', () => resolve());
+          console.log('Состояние Howl:', this.howl.state(), 'Ожидаем события load...');
+          this.howl.once('load', () => {
+            console.log('Аудио файл успешно загружен');
+            cleanup();
+            resolve();
+          });
           this.howl.once('loaderror', (_id, error) => {
+            console.error('Ошибка загрузки аудио файла:', error);
+            cleanup();
             reject(new PlaybackError(`Ошибка загрузки: ${error}`));
           });
         }
       });
+      
+      console.log('Загрузка завершена, устанавливаем начальную позицию');
 
       // Устанавливаем начальную позицию после загрузки
       if (savedProgress !== null && savedProgress > 0 && this.howl) {

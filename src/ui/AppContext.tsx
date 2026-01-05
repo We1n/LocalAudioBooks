@@ -173,8 +173,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       
       // Загружаем книгу в плеер
       console.log('Загрузка книги в плеер...');
-      await loadBook(book, handle);
-      console.log('Книга успешно загружена в плеер');
+      try {
+        await loadBook(book, handle);
+        console.log('Книга успешно загружена в плеер');
+      } catch (error) {
+        console.error('ОШИБКА при загрузке книги в плеер:', error);
+        throw error; // Пробрасываем ошибку дальше
+      }
       
       // Устанавливаем текущую книгу ПЕРЕД переключением экрана
       console.log('Устанавливаем текущую книгу:', book.title);
