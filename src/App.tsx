@@ -6,6 +6,7 @@ import { saveProgress as savePlayerProgress } from './player';
 const LibraryScreen = lazy(() => import('./ui/screens/LibraryScreen').then(m => ({ default: m.LibraryScreen })));
 const PlayerScreen = lazy(() => import('./ui/screens/PlayerScreen').then(m => ({ default: m.PlayerScreen })));
 const SettingsScreen = lazy(() => import('./ui/screens/SettingsScreen').then(m => ({ default: m.SettingsScreen })));
+const StatisticsScreen = lazy(() => import('./ui/screens/StatisticsScreen').then(m => ({ default: m.StatisticsScreen })));
 
 function AppContent() {
   const { currentScreen } = useApp();
@@ -55,6 +56,12 @@ function AppContent() {
       return (
         <Suspense fallback={<LoadingScreen />}>
           <SettingsScreen />
+        </Suspense>
+      );
+    case 'statistics':
+      return (
+        <Suspense fallback={<LoadingScreen />}>
+          <StatisticsScreen />
         </Suspense>
       );
     default:

@@ -10,3 +10,4 @@ export { OfflineIndicator } from './components/OfflineIndicator';
 export { LibraryScreen } from './screens/LibraryScreen';
 export { PlayerScreen } from './screens/PlayerScreen';
 export { SettingsScreen } from './screens/SettingsScreen';
+export { StatisticsScreen } from './screens/StatisticsScreen';

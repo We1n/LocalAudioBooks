@@ -8,7 +8,7 @@ import { loadAllBooks, loadSettings, saveSettings as saveSettingsToStorage, load
 import { getState, onStateChange, loadBook, type PlayerState } from '../player';
 import { requestFolderAccess, scanFolder } from '../library';
 
-export type Screen = 'library' | 'player' | 'settings';
+export type Screen = 'library' | 'player' | 'settings' | 'statistics';
 
 interface AppContextValue {
   // Экраны и навигация

@@ -8,13 +8,14 @@ import { StorageError } from '../utils';
 
 // Константы для работы с IndexedDB
 const DB_NAME = 'LocalAudioBooks';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // Увеличена версия для добавления статистики
 
 // Названия хранилищ (object stores)
 const STORE_BOOKS = 'books';
 const STORE_PROGRESS = 'progress';
 const STORE_SETTINGS = 'settings';
 const STORE_FOLDERS = 'folders';
+const STORE_STATISTICS = 'statistics';
 
 // Типы данных
 export interface Book {
@@ -50,6 +51,12 @@ export interface SelectedFolder {
   handle: FileSystemDirectoryHandle;
   path: string;
   name: string;
+}
+
+export interface DailyStats {
+  date: string; // Primary Key "YYYY-MM-DD"
+  totalSeconds: number;
+  booksListened: string[]; // Массив ID книг, которые слушали в этот день
 }
 
 // Настройки по умолчанию
@@ -112,6 +119,12 @@ class Database {
         // Создаём хранилище для папок
         if (!db.objectStoreNames.contains(STORE_FOLDERS)) {
           db.createObjectStore(STORE_FOLDERS, { keyPath: 'path' });
+        }
+
+        // Создаём хранилище для статистики
+        if (!db.objectStoreNames.contains(STORE_STATISTICS)) {
+          const statsStore = db.createObjectStore(STORE_STATISTICS, { keyPath: 'date' });
+          statsStore.createIndex('date', 'date', { unique: true });
         }
       };
     });
@@ -434,13 +447,99 @@ export async function loadSelectedFolders(): Promise<Omit<SelectedFolder, 'handl
   }
 }
 
+// ==================== API для работы со статистикой ====================
+
+/**
+ * Сохраняет статистику за день
+ * Добавляет время к текущему дню и обновляет список книг
+ */
+export async function saveDailyStats(seconds: number, bookId: string): Promise<void> {
+  try {
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    
+    const db = await database.getDB();
+    const transaction = db.transaction([STORE_STATISTICS], 'readwrite');
+    const store = transaction.objectStore(STORE_STATISTICS);
+    
+    // Получаем текущую статистику за день
+    const existingStats = await new Promise<DailyStats | null>((resolve, reject) => {
+      const request = store.get(today);
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(new StorageError(`Не удалось загрузить статистику: ${request.error?.message}`));
+    });
+    
+    // Обновляем или создаём статистику
+    const stats: DailyStats = existingStats
+      ? {
+          date: today,
+          totalSeconds: existingStats.totalSeconds + seconds,
+          booksListened: existingStats.booksListened.includes(bookId)
+            ? existingStats.booksListened
+            : [...existingStats.booksListened, bookId],
+        }
+      : {
+          date: today,
+          totalSeconds: seconds,
+          booksListened: [bookId],
+        };
+    
+    await new Promise<void>((resolve, reject) => {
+      const request = store.put(stats);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(new StorageError(`Не удалось сохранить статистику: ${request.error?.message}`));
+    });
+  } catch (error) {
+    throw new StorageError(`Ошибка при сохранении статистики: ${error instanceof Error ? error.message : String(error)}`, error instanceof Error ? error : undefined);
+  }
+}
+
+/**
+ * Получает статистику за год
+ */
+export async function getYearlyStats(year: number): Promise<{ totalSeconds: number; booksCount: number }> {
+  try {
+    const db = await database.getDB();
+    const transaction = db.transaction([STORE_STATISTICS], 'readonly');
+    const store = transaction.objectStore(STORE_STATISTICS);
+    
+    return new Promise<{ totalSeconds: number; booksCount: number }>((resolve, reject) => {
+      const request = store.getAll();
+      request.onsuccess = () => {
+        const allStats = request.result as DailyStats[];
+        
+        // Фильтруем по году
+        const yearStart = `${year}-01-01`;
+        const yearEnd = `${year}-12-31`;
+        const yearStats = allStats.filter(
+          (stat) => stat.date >= yearStart && stat.date <= yearEnd
+        );
+        
+        // Агрегируем данные
+        const totalSeconds = yearStats.reduce((sum, stat) => sum + stat.totalSeconds, 0);
+        const uniqueBooks = new Set<string>();
+        yearStats.forEach((stat) => {
+          stat.booksListened.forEach((bookId) => uniqueBooks.add(bookId));
+        });
+        
+        resolve({
+          totalSeconds,
+          booksCount: uniqueBooks.size,
+        });
+      };
+      request.onerror = () => reject(new StorageError(`Не удалось загрузить статистику: ${request.error?.message}`));
+    });
+  } catch (error) {
+    throw new StorageError(`Ошибка при загрузке статистики: ${error instanceof Error ? error.message : String(error)}`, error instanceof Error ? error : undefined);
+  }
+}
+
 /**
  * Очищает все данные из базы данных (для тестирования)
  */
 export async function clearAll(): Promise<void> {
   try {
     const db = await database.getDB();
-    const stores = [STORE_BOOKS, STORE_PROGRESS, STORE_SETTINGS, STORE_FOLDERS];
+    const stores = [STORE_BOOKS, STORE_PROGRESS, STORE_SETTINGS, STORE_FOLDERS, STORE_STATISTICS];
     
     await Promise.all(
       stores.map(

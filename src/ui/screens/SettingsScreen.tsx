@@ -46,6 +46,22 @@ export function SettingsScreen() {
             Настройки
           </h2>
           
+          {/* Статистика */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              Статистика
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+              Просмотр статистики прослушивания
+            </p>
+            <Button
+              variant="primary"
+              onClick={() => setCurrentScreen('statistics')}
+            >
+              📊 Открыть статистику
+            </Button>
+          </div>
+          
           {/* Предпочтительный интервал перемотки */}
           <div>
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">

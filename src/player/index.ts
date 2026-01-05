@@ -10,7 +10,7 @@
 
 import { Howl, Howler } from 'howler';
 import type { Book } from '../storage';
-import { loadProgress, saveProgress, loadSettings, saveSettings } from '../storage';
+import { loadProgress, saveProgress, loadSettings, saveSettings, saveDailyStats } from '../storage';
 import { PlaybackError } from '../utils';
 
 // Интерфейс для события изменения состояния плеера
@@ -34,6 +34,11 @@ class Player {
   private stateCallbacks: Set<PlayerStateCallback> = new Set();
   private autoSaveInterval: number | null = null;
   private readonly AUTO_SAVE_INTERVAL_MS = 5000; // 5 секунд
+  private statsInterval: number | null = null;
+  private readonly STATS_SAVE_INTERVAL_MS = 30000; // 30 секунд
+  private accumulatedSeconds: number = 0;
+  private lastPosition: number = 0;
+  private lastStatsSaveTime: number = 0;
 
   /**
    * Инициализирует воспроизведение книги
@@ -50,6 +55,17 @@ class Player {
 
       // Останавливаем автосохранение
       this.stopAutoSave();
+      this.stopStatsCollection();
+      
+      // Сохраняем накопленную статистику перед сменой книги
+      if (this.currentBookId && this.accumulatedSeconds > 0) {
+        await this.saveStats();
+      }
+      
+      // Сбрасываем накопленную статистику
+      this.accumulatedSeconds = 0;
+      this.lastPosition = 0;
+      this.lastStatsSaveTime = 0;
 
       // Получаем File объект
       let file: File;
@@ -87,16 +103,31 @@ class Player {
         },
         onplay: () => {
           this.startAutoSave();
+          this.startStatsCollection();
           this.notifyStateChange();
         },
         onpause: () => {
           this.saveCurrentPosition();
           this.stopAutoSave();
+          this.stopStatsCollection();
+          // Сохраняем статистику при паузе
+          if (this.accumulatedSeconds > 0) {
+            this.saveStats().catch((error) => {
+              console.error('Ошибка сохранения статистики:', error);
+            });
+          }
           this.notifyStateChange();
         },
         onend: () => {
           this.saveCurrentPosition();
           this.stopAutoSave();
+          this.stopStatsCollection();
+          // Сохраняем статистику при окончании
+          if (this.accumulatedSeconds > 0) {
+            this.saveStats().catch((error) => {
+              console.error('Ошибка сохранения статистики:', error);
+            });
+          }
           this.notifyStateChange();
         },
         onseek: () => {
@@ -400,10 +431,76 @@ class Player {
   }
 
   /**
+   * Запускает сбор статистики
+   */
+  private startStatsCollection(): void {
+    this.stopStatsCollection(); // Останавливаем предыдущий интервал, если есть
+    
+    this.lastPosition = this.getCurrentPosition();
+    this.lastStatsSaveTime = Date.now();
+    
+    this.statsInterval = window.setInterval(() => {
+      if (this.currentBookId && this.howl && this.howl.playing()) {
+        const currentPosition = this.getCurrentPosition();
+        const now = Date.now();
+        const elapsedSeconds = (now - this.lastStatsSaveTime) / 1000;
+        
+        // Накапливаем секунды (только если позиция увеличилась)
+        if (currentPosition > this.lastPosition) {
+          this.accumulatedSeconds += Math.min(elapsedSeconds, currentPosition - this.lastPosition);
+        }
+        
+        this.lastPosition = currentPosition;
+        this.lastStatsSaveTime = now;
+        
+        // Сохраняем статистику каждые 30 секунд накопленного времени
+        if (this.accumulatedSeconds >= 30) {
+          this.saveStats().catch((error) => {
+            console.error('Ошибка сохранения статистики:', error);
+          });
+        }
+      }
+    }, 1000); // Проверяем каждую секунду
+  }
+  
+  /**
+   * Останавливает сбор статистики
+   */
+  private stopStatsCollection(): void {
+    if (this.statsInterval !== null) {
+      clearInterval(this.statsInterval);
+      this.statsInterval = null;
+    }
+  }
+  
+  /**
+   * Сохраняет накопленную статистику
+   */
+  private async saveStats(): Promise<void> {
+    if (!this.currentBookId || this.accumulatedSeconds <= 0) {
+      return;
+    }
+    
+    try {
+      await saveDailyStats(this.accumulatedSeconds, this.currentBookId);
+      this.accumulatedSeconds = 0; // Сбрасываем после сохранения
+    } catch (error) {
+      console.error('Ошибка при сохранении статистики:', error);
+    }
+  }
+  
+  /**
    * Очищает ресурсы плеера
    */
   destroy(): void {
     this.stopAutoSave();
+    this.stopStatsCollection();
+    // Сохраняем статистику при уничтожении
+    if (this.accumulatedSeconds > 0 && this.currentBookId) {
+      this.saveStats().catch((error) => {
+        console.error('Ошибка сохранения статистики при уничтожении:', error);
+      });
+    }
     this.saveCurrentPosition();
 
     if (this.howl) {
