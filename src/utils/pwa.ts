@@ -15,6 +15,12 @@ let deferredPrompt: BeforeInstallPromptEvent | null = null;
 export function registerServiceWorker(): void {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
+      // В dev режиме не регистрируем Service Worker
+      if (import.meta.env.DEV) {
+        console.log('Service Worker отключен в dev режиме');
+        return;
+      }
+      
       navigator.serviceWorker
         .register('/sw.js', { scope: '/' })
         .then((registration) => {
